@@ -1,40 +1,30 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import logging
+import time
+
 from app.database import engine, get_db
 from app import models, schemas
 from app.utils import encode_base62
-
+from app.routers import url
 
 models.Base.metadata.create_all(bind=engine)
 
+logging.basicConfig(level=logging.INFO)
+
 app = FastAPI()
+app.include_router(url.router)
 
-@app.get("/")
-def read_root():
-    return {
-        "message": "URL Shrotener is running"
-    }
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    logging.info(
+        f"{request.method}: {request.url.path} "
+        f"Status: {response.status_code} "
+        f"Duration: {duration:.4f}s"
+    )
     
-@app.post("/shorten", response_model=schemas.URLResponse)
-def create_short_url(
-    url_data: schemas.URLCreate,
-    db: Session = Depends(get_db)
-):
-    # Step 1: Create DB entry without short_code
-    new_url = models.URL(original_url=str(url_data.url))
-    db.add(new_url)
-    db.commit()
-    db.refresh(new_url)
-    
-    # Step 2: Generate Base62 short_code
-    short_code = encode_base62(new_url.id)
-    
-    # Step 3: Update Record
-    new_url.short_code = short_code
-    db.commit()
-    db.refresh(new_url)
-    print(new_url)
-    return new_url
-
-    
-    
+    return response

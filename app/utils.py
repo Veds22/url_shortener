@@ -1,5 +1,5 @@
 import string
-
+from fastapi import HTTPException
 BASE62 = string.ascii_lowercase + string.ascii_uppercase + string.digits
 
 def encode_base62(num: int) -> str:
@@ -14,4 +14,3 @@ def encode_base62(num: int) -> str:
         num //= base
         
     return ''.join(reversed(result))
-
