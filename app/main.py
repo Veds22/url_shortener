@@ -1,6 +1,4 @@
 ## This is the main application file for the URL shortener service. It sets up the FastAPI app, includes routers, and defines middleware and exception handlers.
-import logging
-import time
 # FastAPI imports
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -12,14 +10,14 @@ from slowapi.errors import RateLimitExceeded
 # Local imports
 from app.database import engine
 from app.routers import url
-from app.rate_limiter import limiter
 from app import models
+from app.middleware.logging import LoggingMiddleware
+from app.middleware.rate_limiter import limiter
+
+
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
-
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -28,22 +26,11 @@ app.include_router(url.router)
 # Set up rate limiter
 
 app.state.limiter = limiter
+
+#adding Middleware
+
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(SlowAPIMiddleware)
-
-
-# Logging middleware
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
-    logging.info(
-        f"{request.method}: {request.url.path} "
-        f"Status: {response.status_code} "
-        f"Duration: {duration:.4f}s"
-    )
-    
-    return response
 
 # Exception handlers #
 

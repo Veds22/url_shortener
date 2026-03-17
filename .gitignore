@@ -1,6 +1,7 @@
 /venv
 /docs
 /.env
+/tests/.env.test
 *.pyc
 *.sqlite3
 .idea/

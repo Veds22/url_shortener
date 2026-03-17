@@ -9,8 +9,9 @@ import uuid
 
 from app.database import get_db
 from app.utils import encode_base62
-from app.rate_limiter import limiter
+from app.middleware.rate_limiter import limiter
 from app import models, schemas
+
 
 RESERVED_CODES = {
     "docs",
@@ -23,6 +24,7 @@ RESERVED_CODES = {
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,20}$")
 
 DEFAULT_EXPIRY_DAYS = 7
+
 
 router = APIRouter()
 
@@ -41,7 +43,7 @@ def create_short_url(
     url_data: schemas.URLCreate,
     db: Session = Depends(get_db)
 ):
-
+    
     now = datetime.now(timezone.utc)
 
     
@@ -146,7 +148,7 @@ def list_links(
             staus_code=400,
             detail="Page and limit must be positive integers"
         )
-    
+
     offset = (page - 1) * limit
     total = db.query(models.ShortLink).count()
         
@@ -187,12 +189,12 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     url_entry = db.query(models.ShortLink).filter(models.ShortLink.short_code == short_code).first()
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
-    
+
     if not url_entry.is_active:
         raise HTTPException(status_code=410, detail="URL is disabled")
-    
+
     if url_entry.created_at < datetime.now(timezone.utc) - timedelta(hours=168):
-        raise HTTPException(status_code=410, detail="URL has expired")  
+        raise HTTPException(status_code=410, detail="URL has expired")
 
     db.execute(
         update(models.ShortLink)
@@ -208,20 +210,18 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
 # User endpoints for enabling short links
 @router.put("/{short_code}")
 def enable_short_link(short_code: str, db: Session = Depends(get_db)):
-    
     url_entry = db.query(models.ShortLink).filter(
         models.ShortLink.short_code == short_code
     ).first()
-    
+
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
-    
+
     if url_entry.is_active:
         raise HTTPException(status_code=400, detail="Short URL is already active")
-    
+
     url_entry.is_active = True
     db.commit()
-    
     return {
         "message": f"Short URL with code '{short_code}' has been enabled"
     }
@@ -230,20 +230,18 @@ def enable_short_link(short_code: str, db: Session = Depends(get_db)):
 # User endpoints for disabling short links by soft delete
 @router.delete("/{short_code}")
 def disable_short_link(short_code: str, db: Session = Depends(get_db)):
-    
     url_entry = db.query(models.ShortLink).filter(
         models.ShortLink.short_code == short_code
     ).first()
-    
+
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
-    
+
     if not url_entry.is_active:
         raise HTTPException(status_code=410, detail="Short URL is already disabled")
-    
+
     url_entry.is_active = False
     db.commit()
-    
     return {
         "message": f"Short URL with code '{short_code}' has been disabled"
     }
@@ -253,7 +251,6 @@ def disable_short_link(short_code: str, db: Session = Depends(get_db)):
 # User endpoint for analytics of short links
 @router.get("/analytics/{short_code}", response_model=schemas.URLAnalytics )
 def get_analytics(short_code: str, db: Session = Depends(get_db)):
-    
     url_entry = db.query(models.ShortLink).filter(models.ShortLink.short_code == short_code).first()
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not available")
