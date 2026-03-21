@@ -1,7 +1,6 @@
 import threading 
 import uuid
-
-def test_custom_code_race_condition(client):
+def test_custom_code_race_condition(client, mock_redis):
     
     payload = {
         "url": "https://www.example.com",

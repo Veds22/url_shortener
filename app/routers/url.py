@@ -8,10 +8,11 @@ import re
 import uuid
 
 from app.database import get_db
-from app.utils import encode_base62
+from app.core.utils import encode_base62
 from app.middleware.rate_limiter import limiter
 from app import models, schemas
-
+from app.core.redis import redis_client
+from app.core.utils import invalidate_url_cache
 
 RESERVED_CODES = {
     "docs",
@@ -145,7 +146,7 @@ def list_links(
 ):
     if page < 1 or limit < 1:
         raise HTTPException(
-            staus_code=400,
+            status_code=400,
             detail="Page and limit must be positive integers"
         )
 
@@ -182,28 +183,42 @@ def list_links(
     }   
     
     
-    
 # Redirect logic for short code
 @router.get("/{short_code}")
 def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
-    url_entry = db.query(models.ShortLink).filter(models.ShortLink.short_code == short_code).first()
+    
+    cached_url = redis_client.get(f"url:{short_code}")
+    if cached_url:
+        new_count = redis_client.incr(f"clicks:{short_code}")
+        if new_count >= 50:
+            from app.tasks.click_tasks import sync_clicks_for_code
+            sync_clicks_for_code.delay(short_code)
+        return RedirectResponse(url=cached_url)
+    
+    url_entry = db.query(models.ShortLink).filter(
+        models.ShortLink.short_code == short_code
+    ).first()
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
 
     if not url_entry.is_active:
+        invalidate_url_cache(short_code)
         raise HTTPException(status_code=410, detail="URL is disabled")
 
-    if url_entry.created_at < datetime.now(timezone.utc) - timedelta(hours=168):
+    if url_entry.expires_at and url_entry.expires_at <= datetime.now(timezone.utc):
+        url_entry.is_active = False
+        db.commit()
+        invalidate_url_cache(short_code)
         raise HTTPException(status_code=410, detail="URL has expired")
 
-    db.execute(
-        update(models.ShortLink)
-        .where(
-            models.ShortLink.short_code == short_code,
-        )
-        .values(clicks=models.ShortLink.clicks + 1)
+    redis_client.set(
+        f"url:{short_code}",
+        url_entry.destination.original_url,
+        ex=3600
     )
-    db.commit()
+    
+    redis_client.incr(f"clicks:{short_code}")
+    
     return RedirectResponse(url=url_entry.destination.original_url)
 
 
@@ -241,6 +256,8 @@ def disable_short_link(short_code: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=410, detail="Short URL is already disabled")
 
     url_entry.is_active = False
+    invalidate_url_cache(short_code)
+    
     db.commit()
     return {
         "message": f"Short URL with code '{short_code}' has been disabled"

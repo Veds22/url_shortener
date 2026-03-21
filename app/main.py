@@ -2,7 +2,8 @@
 # FastAPI imports
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 # Rate limiting imports
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -10,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from app.database import engine
 from app.routers import url
 from app import models
-from app.middleware.logging import LoggingMiddleware, get_logger
+from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limiter import limiter
 
 
@@ -22,10 +23,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(url.router)
 
-# Setup logger
-logger = get_logger("app.main")
-
 # Set up rate limiter
+
 app.state.limiter = limiter
 
 #adding Middleware
@@ -38,10 +37,6 @@ app.add_middleware(SlowAPIMiddleware)
 # Request validation errors
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.warning(
-        f"ValidationError | Path: {request.url.path} | Errors: {exc.errors()}"
-    )
-
     return JSONResponse(
         status_code=422,
         content={
@@ -57,9 +52,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Rate limit exceeded
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
-    logger.warning(
-        f"RateLimitExceeded | Path: {request.url.path} | Client: {request.client.host if request.client else 'unknown'}"
-    )
     return JSONResponse(
         status_code=429,
         content={
@@ -72,11 +64,8 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     )    
 
 # Other HTTP exceptions
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(
-        f"HTTPException | Path: {request.url.path} | Status Code: {exc.status_code} | Message: {exc.detail}"
-    )       
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={
