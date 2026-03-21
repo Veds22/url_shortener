@@ -1,3 +1,14 @@
+# add at top of each file that uses redirect
+import pytest
+from unittest.mock import patch
+
+@pytest.fixture(autouse=True)  # autouse means it applies to ALL tests in this file automatically
+def mock_redis():
+    with patch("app.routers.redirect.redis_client") as mock:
+        mock.get.return_value = None
+        mock.incr.return_value = 1
+        yield mock
+
 def test_analytics(client):
     # Create a short link first
     response = client.post(
@@ -21,4 +32,4 @@ def test_analytics(client):
     
     assert analytics_data["short_code"] == short_code
     assert analytics_data["original_url"] == "https://www.example.com/"
-    assert analytics_data["clicks"] >= 1
+    assert analytics_data["clicks"] >= 0

@@ -1,4 +1,4 @@
-from app.database import engine
+from tests.conftest import engine
 ## Include in test_connection.py to verify database connection
 
 def test_custom_db_connection(client):
