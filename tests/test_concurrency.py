@@ -1,18 +1,6 @@
 import threading 
 import uuid
-
-# add at top of each file that uses redirect
-import pytest
-from unittest.mock import patch
-
-@pytest.fixture(autouse=True)  # autouse means it applies to ALL tests in this file automatically
-def mock_redis():
-    with patch("app.routers.redirect.redis_client") as mock:
-        mock.get.return_value = None
-        mock.incr.return_value = 1
-        yield mock
-
-def test_custom_code_race_condition(client):
+def test_custom_code_race_condition(client, mock_redis):
     
     payload = {
         "url": "https://www.example.com",

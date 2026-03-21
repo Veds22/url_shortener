@@ -1,15 +1,4 @@
-# add at top of each file that uses redirect
-import pytest
-from unittest.mock import patch
-
-@pytest.fixture(autouse=True)  # autouse means it applies to ALL tests in this file automatically
-def mock_redis():
-    with patch("app.routers.redirect.redis_client") as mock:
-        mock.get.return_value = None
-        mock.incr.return_value = 1
-        yield mock
-
-def test_shortlink_creation(client):
+def test_shortlink_creation(client, mock_redis):
     response = client.post(
         "/shorten",
         json={"url": "https://www.example.com"}
@@ -18,7 +7,7 @@ def test_shortlink_creation(client):
     data = response.json()
     assert "short_url" in data
 
-def test_shortlink_custom_code(client):
+def test_shortlink_custom_code(client, mock_redis):
     response = client.post(
         "/shorten",
         json={"url": "https://www.example.com", "custom_code": "testlink"}
@@ -27,7 +16,7 @@ def test_shortlink_custom_code(client):
     data = response.json()
     assert data["short_code"] == "testlink"
 
-def test_shortlink_redirection(client):
+def test_shortlink_redirection(client, mock_redis):
     # First create a short link
     response = client.post(
         "/shorten",
@@ -45,7 +34,7 @@ def test_shortlink_redirection(client):
     assert redirect_response.status_code == 307
     assert redirect_response.headers["location"] == "https://www.example.com/"
     
-def test_enable_short_link(client):
+def test_enable_short_link(client, mock_redis):
     # Create a short link
     response = client.post(
         "/shorten",

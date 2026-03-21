@@ -1,17 +1,7 @@
-import pytest
-from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone, timedelta
 from app import models
-from tests.conftest import TestingSessionLocal
-
-
-@pytest.fixture
-def mock_redis():
-    with patch("app.routers.redirect.redis_client") as mock:
-        mock.get.return_value = None
-        mock.incr.return_value = 1
-        yield mock
-
+from tests.conftest import TestingSessionLocal, mock_redis
+from unittest.mock import patch, MagicMock
 
 def make_short_link(short_code, active=True, expired=False):
     db = TestingSessionLocal()
