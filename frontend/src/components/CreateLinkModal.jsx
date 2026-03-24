@@ -29,8 +29,11 @@ export default function CreateLinkModal({ onClose, onCreate }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        background: "rgba(0,0,0,0.6)",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0,0,0,0.45)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -46,7 +49,7 @@ export default function CreateLinkModal({ onClose, onCreate }) {
           padding: 32,
           width: 440,
           maxWidth: "90vw",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
         <h2 style={{ margin: "0 0 24px", fontSize: 18, fontWeight: 800, color: C.text }}>

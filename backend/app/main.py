@@ -14,9 +14,14 @@ from app.routers import url, auth
 from app import models
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limiter import limiter
+from app.core.init_admin import create_admin
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def startup_event():
+    """Run startup tasks such as creating the default admin user."""
+    create_admin()
 
 # Initialize FastAPI app
 app = FastAPI()

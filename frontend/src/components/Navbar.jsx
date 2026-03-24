@@ -35,6 +35,9 @@ export default function Navbar({ onNavigate }) {
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Btn variant="ghost" style={{ padding: "7px 14px", fontSize: 13 }} onClick={() => onNavigate("/docs")}>
+          Docs
+        </Btn>
         {user ? (
           <>
             <Btn variant="ghost" style={{ padding: "7px 16px", fontSize: 13 }} onClick={() => onNavigate("/me")}>

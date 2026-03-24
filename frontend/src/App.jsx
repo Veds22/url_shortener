@@ -5,6 +5,7 @@ import MePage from "./pages/MePage";
 import AuthPage from "./pages/AuthPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import RedirectPage from "./pages/RedirectPage";
+import DocsPage from "./pages/DocsPage";
 
 const RESERVED = ["me", "login", "signup"];
 
@@ -41,6 +42,7 @@ function Router() {
   if (route === "/me") return <MePage onNavigate={navigate} />;
   if (route === "/login") return <AuthPage onNavigate={navigate} defaultTab="login" />;
   if (route === "/signup") return <AuthPage onNavigate={navigate} defaultTab="signup" />;
+  if (route === "/docs") return <DocsPage onNavigate={navigate} />;
 
   if (route.startsWith("/analytics/")) {
     const code = route.replace("/analytics/", "");

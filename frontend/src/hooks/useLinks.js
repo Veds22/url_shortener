@@ -5,17 +5,28 @@ export function useLinks() {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
 
-  // Fetch links from backend on mount
+  // Fetch links from backend whenever page changes (server-side pagination)
   useEffect(() => {
-    linksApi.getMyLinks()
+    setLoading(true);
+    linksApi.getMyLinks(page, limit)
       .then((data) => {
         // backend returns { total, page, limit, links }
-        setLinks(data.links ?? data);
+        if (data && Array.isArray(data.links)) {
+          setLinks(data.links);
+          if (typeof data.total === "number") setTotal(data.total);
+        } else {
+          // Fallback if backend ever returns a bare list
+          setLinks(data || []);
+          setTotal(Array.isArray(data) ? data.length : 0);
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, limit]);
 
   // Optimistic toggle — update UI immediately, call API, revert on failure
   const toggleStatus = async (id, currentStatus) => {
@@ -48,16 +59,22 @@ export function useLinks() {
 
   // Call API then prepend the returned link to the list
   const createLink = async ({ url, customCode, expiry }) => {
-    
     const newLink = await linksApi.shorten(
       url,
       customCode || null,
       expiry || null
     );
-    // backend returns the full link object — prepend to list
-    setLinks((prev) => [newLink, ...prev]);
-    return newLink;
+    // backend URLResponse doesn't include status/clicks; assume new links are active with 0 clicks
+    const shaped = {
+      clicks: 0,
+      status: "active",
+      ...newLink,
+    };
+    // prepend to current page for immediate UI update and bump total
+    setLinks((prev) => [shaped, ...prev]);
+    setTotal((prev) => prev + 1);
+    return shaped;
   };
 
-  return { links, loading, error, toggleStatus, createLink };
+  return { links, loading, error, page, setPage, limit, total, toggleStatus, createLink };
 }

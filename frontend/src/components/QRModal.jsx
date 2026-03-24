@@ -52,8 +52,18 @@ export default function QRModal({ url, shortCode, onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#00000099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
-      <Card style={{ padding: 32, width: 320, textAlign: "center", boxShadow: "0 32px 80px #00000099" }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.45)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 200,
+      }}
+    >
+      <Card style={{ padding: 32, width: 320, textAlign: "center", boxShadow: "0 24px 60px rgba(0,0,0,0.45)" }}>
         <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800 }}>QR Code</h2>
         {/* Show the actual URL passed in — not a hardcoded domain */}
         <p style={{ color: C.textDim, fontSize: 12, margin: "0 0 20px", wordBreak: "break-all" }}>{url}</p>

@@ -14,16 +14,13 @@ import { useToast } from "../hooks/useToast";
 import { useLinks } from "../hooks/useLinks";
 import { useAuth } from "../context/AuthContext";
 
-const PER_PAGE = 10;
-
 export default function MePage({ onNavigate }) {
   const { user } = useAuth();
-  const { links, loading, error, toggleStatus, createLink } = useLinks();
+  const { links, loading, error, page, setPage, limit, total, toggleStatus, createLink } = useLinks();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [qrLink, setQrLink] = useState(null);
-  const [page, setPage] = useState(1);
   const { toast, showToast } = useToast();
 
   // Guard — must be after all hooks
@@ -51,8 +48,9 @@ export default function MePage({ onNavigate }) {
     return matchSearch && matchFilter;
   });
 
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // Server-side pagination: backend already limits to `limit` per page
+  const totalPages = Math.max(1, Math.ceil(total / (limit || 10)));
+  const paginated = filtered;
   const totalClicks = links.reduce((a, l) => a + (l.clicks || 0), 0);
 
   // Called by CreateLinkModal — must be async so modal can await it
@@ -109,7 +107,7 @@ export default function MePage({ onNavigate }) {
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
           {[
-            { label: "Total Links", value: loading ? "—" : links.length, color: C.teal },
+            { label: "Total Links", value: loading ? "—" : total, color: C.teal },
             { label: "Active", value: loading ? "—" : links.filter((l) => l.status === "active").length, color: C.green },
             { label: "Total Clicks", value: loading ? "—" : totalClicks.toLocaleString(), color: C.pro },
             { label: "Tier", value: user.tier.toUpperCase(), color: C.premium },
