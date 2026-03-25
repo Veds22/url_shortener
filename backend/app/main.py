@@ -1,5 +1,7 @@
 ## This is the main application file for the URL shortener service. It sets up the FastAPI app, includes routers, and defines middleware and exception handlers.
 # FastAPI imports
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -18,15 +20,18 @@ from app.core.init_admin import create_admin
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
-@app.on_event("startup")
-def startup_event():
-    """Run startup tasks such as creating the default admin user."""
-    create_admin()
+
 
 # Initialize FastAPI app
 app = FastAPI()
 app.include_router(url.router)
 app.include_router(auth.router, prefix="/auth")  # Auth routes under /auth
+
+def startup_event():
+    """Run startup tasks such as creating the admin user."""
+    create_admin()  # Ensure the admin user exists on startup
+
+app.add_event_handler("startup", startup_event)
 
 # Set up rate limiter
 
@@ -34,9 +39,12 @@ app.state.limiter = limiter
 
 #adding Middleware
 
+RAW_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
+ALLOWED_ORIGINS = allowed_origins = [o.strip() for o in RAW_ORIGINS.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
