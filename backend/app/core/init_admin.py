@@ -12,15 +12,15 @@ def create_admin():
     db = SessionLocal()
 
     try:
-        admin_email = os.getenv("ADMIN_USERNAME")
+        admin_username = os.getenv("ADMIN_USERNAME")
         admin_password = os.getenv("ADMIN_PASSWORD")
 
-        if not admin_email or not admin_password:
+        if not admin_username or not admin_password:
             logger.warning("Admin credentials not set")
             return
 
         existing_admin = db.query(models.User).filter(
-            models.User.email == admin_email
+            models.User.username == admin_username
         ).first()
 
         if existing_admin:
@@ -28,7 +28,7 @@ def create_admin():
             return
 
         admin_user = models.User(
-            email=admin_email,
+            username=admin_username,
             password_hash=hash_password(admin_password),
             role="admin",
             tier="premium"
