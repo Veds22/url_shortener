@@ -288,7 +288,10 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     )
     redis_client.incr(f"clicks:{short_code}")
 
-    return RedirectResponse(url=url_entry.destination.original_url)
+    return {
+        'result': 'success',
+        'original_url': url_entry.destination.original_url
+    }
 
 
 @router.put("/{short_code}")

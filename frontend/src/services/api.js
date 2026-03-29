@@ -115,12 +115,21 @@ export const analyticsApi = {
 
 export const redirectApi = {
   // Navigate the browser to the backend redirect endpoint for a short code.
-  go: (shortCode) => {
+  go: async (shortCode) => {
     if (!shortCode) return;
-    // Let the browser follow the 307 from FastAPI by changing location
     if (shortCode.endsWith("/")) {
       shortCode = shortCode.slice(0, -1);
     }
-    window.location.href = `${BASE_URL}/${shortCode}`;
-  },
+
+    try {
+      const data = await request(`/${shortCode}`);
+      if (data && data.original_url) {
+        window.location.href = data.original_url;
+      }
+    } catch (err) {
+      // Swallow errors here; the redirect page already shows state,
+      // and failures just mean we stay on the current page.
+      console.error("Redirect failed:", err);
+    }
+  }
 };
