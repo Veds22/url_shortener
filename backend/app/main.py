@@ -40,7 +40,7 @@ app.state.limiter = limiter
 #adding Middleware
 
 RAW_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
-ALLOWED_ORIGINS = allowed_origins = [o.strip() for o in RAW_ORIGINS.split(",")]
+ALLOWED_ORIGINS = allowed_origins = [o.strip() for o in RAW_ORIGINS]
 
 app.add_middleware(
     CORSMiddleware,
