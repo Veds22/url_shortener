@@ -30,8 +30,7 @@ def create_admin():
         admin_user = models.User(
             username=admin_username,
             password_hash=hash_password(admin_password),
-            role="admin",
-            tier="premium"
+            tier="admin"
         )
 
         db.add(admin_user)
