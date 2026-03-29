@@ -18,16 +18,16 @@ from app.core.init_admin import create_admin
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
-@app.on_event("startup")
-def startup_event():
-    """Run startup tasks such as creating the default admin user."""
-    create_admin()
+
 
 # Initialize FastAPI app
 app = FastAPI()
 app.include_router(url.router)
 app.include_router(auth.router, prefix="/auth")  # Auth routes under /auth
-
+@app.on_event("startup")
+def startup_event():
+    """Run startup tasks such as creating the default admin user."""
+    create_admin()
 # Set up rate limiter
 
 app.state.limiter = limiter
