@@ -26,20 +26,12 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(url.router)
 app.include_router(auth.router, prefix="/auth")  # Auth routes under /auth
-<<<<<<< HEAD
 
 def startup_event():
     """Run startup tasks such as creating the admin user."""
     create_admin()  # Ensure the admin user exists on startup
 
 app.add_event_handler("startup", startup_event)
-
-=======
-@app.on_event("startup")
-def startup_event():
-    """Run startup tasks such as creating the default admin user."""
-    create_admin()
->>>>>>> main
 # Set up rate limiter
 
 app.state.limiter = limiter
