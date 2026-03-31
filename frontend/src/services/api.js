@@ -117,6 +117,7 @@ export const redirectApi = {
   // Navigate the browser to the backend redirect endpoint for a short code.
   get: async (shortCode) => {
     if (!shortCode) return;
+    console.log("Redirecting to:", shortCode);
     if (shortCode.endsWith("/")) {
       shortCode = shortCode.slice(0, -1);
     }
@@ -124,6 +125,7 @@ export const redirectApi = {
     try {
       const data = await request(`/${shortCode}`);
       if (data && data.original_url) {
+        console.log("Redirecting to original URL:", data.original_url);
         window.location.href = data.original_url;
       }
     } catch (err) {
