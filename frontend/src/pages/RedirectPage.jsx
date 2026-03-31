@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../utils/theme";
 import { shortUrl } from "../utils/url";
 import Btn from "../components/Btn";
-import { redirectApi } from "../services/api";
+import { analyticsApi, redirectApi } from "../services/api";
 
 // NOTE: In production this page is never reached — FastAPI handles
 // GET /{short_code} and issues a real HTTP 307 redirect before React loads.
@@ -14,7 +14,7 @@ export default function RedirectPage({ onNavigate, code }) {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-    redirectApi.get(code)
+    analyticsApi.get(code)
       .then(setLink)
       .catch(() => setLink(null))
       .finally(() => setLoading(false));
