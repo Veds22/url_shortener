@@ -12,8 +12,7 @@ export default function RedirectPage({ onNavigate, code }) {
   const [link, setLink] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
-
-  useEffect(() => {
+    useEffect(() => {
     redirectApi.get(code)
       .then(setLink)
       .catch(() => setLink(null))
