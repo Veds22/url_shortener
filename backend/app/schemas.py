@@ -54,3 +54,11 @@ class PaginatedLinks(BaseModel):
     page: int
     limit: int
     links: List[LinkListItem]
+
+
+class URLResolve(BaseModel):
+    short_code: str
+    status: str
+    original_url: Optional[str] = None
+    created_at: datetime
+    expires_at: Optional[datetime] = None

@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -28,6 +30,10 @@ RESERVED_CODES = {
 }
 
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,20}$")
+
+SHORT_BASE_URL = os.getenv("SHORT_BASE_URL")
+if SHORT_BASE_URL:
+    SHORT_BASE_URL = SHORT_BASE_URL.rstrip("/")
 
 router = APIRouter()
 
@@ -164,7 +170,8 @@ def create_short_url(
         db.commit()
         db.refresh(new_url)
 
-    short_url = f"{request.base_url}{new_url.short_code}"
+    base_url = SHORT_BASE_URL or str(request.base_url).rstrip("/")
+    short_url = f"{base_url}/{new_url.short_code}"
 
     return {
         "id": new_url.id,
@@ -263,6 +270,32 @@ def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: 
     )
 
 
+@router.get("/resolve/{short_code}", response_model=schemas.URLResolve)
+def resolve_short_code(short_code: str, db: Session = Depends(get_db)):
+    """Return metadata for a short code without performing an HTTP redirect."""
+    url_entry = db.query(models.ShortLink).filter(
+        models.ShortLink.short_code == short_code
+    ).first()
+
+    if not url_entry:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+
+    now = datetime.now(timezone.utc)
+    if url_entry.expires_at and url_entry.expires_at <= now and url_entry.status != "expired":
+        url_entry.status = "expired"
+        db.commit()
+        db.refresh(url_entry)
+        invalidate_url_cache(short_code)
+
+    return schemas.URLResolve(
+        short_code=url_entry.short_code,
+        status=url_entry.status,
+        original_url=url_entry.destination.original_url,
+        created_at=url_entry.created_at,
+        expires_at=url_entry.expires_at
+    )
+
+
 @router.get("/{short_code}")
 def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     """
@@ -317,10 +350,7 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     )
     redis_client.incr(f"clicks:{short_code}")
 
-    return {
-        'result': 'success',
-        'original_url': url_entry.destination.original_url
-    }
+    return RedirectResponse(url=url_entry.destination.original_url)
 
 
 @router.put("/{short_code}")

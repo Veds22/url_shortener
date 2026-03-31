@@ -109,6 +109,12 @@ export const analyticsApi = {
   get: (shortCode) => request(`/analytics/${shortCode}`),
 };
 
+// ── Public link resolution ────────────────────────────────────────────────
+
+export const publicLinksApi = {
+  resolve: (shortCode) => request(`/resolve/${shortCode}`),
+};
+
 // ── Redirect ───────────────────────────────────────────────────────────────
 // Uses backend GET /{short_code} redirect endpoint. This does not parse JSON;
 // it is meant for triggering a real browser navigation.
