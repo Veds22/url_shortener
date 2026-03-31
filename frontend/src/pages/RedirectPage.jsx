@@ -14,7 +14,7 @@ export default function RedirectPage({ onNavigate, code }) {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-    analyticsApi.get(code)
+    redirectApi.get(code)
       .then(setLink)
       .catch(() => setLink(null))
       .finally(() => setLoading(false));
