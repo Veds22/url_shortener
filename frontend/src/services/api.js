@@ -115,7 +115,7 @@ export const analyticsApi = {
 
 export const redirectApi = {
   // Navigate the browser to the backend redirect endpoint for a short code.
-  go: async (shortCode) => {
+  get: async (shortCode) => {
     if (!shortCode) return;
     if (shortCode.endsWith("/")) {
       shortCode = shortCode.slice(0, -1);
