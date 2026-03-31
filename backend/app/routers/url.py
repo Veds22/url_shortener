@@ -234,6 +234,35 @@ def list_links(
     }
 
 
+@router.get("/analytics/{short_code}", response_model=schemas.URLAnalytics)
+def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Retrieve analytics for a short link.
+
+    Returns click count, original URL, short code, and creation date.
+    Note: clicks shown reflect the last DB sync — buffered Redis clicks
+    may not yet be included until the next Celery sync task runs.
+    """
+    url_entry = db.query(models.ShortLink).filter(
+        models.ShortLink.short_code == short_code,
+    ).first()
+
+    if not url_entry:
+        raise HTTPException(status_code=404, detail="Short URL not available")
+
+    if url_entry.user_id != current_user.id and current_user.tier != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorised to view analytics for this URL")
+
+    return schemas.URLAnalytics(
+        original_url=url_entry.destination.original_url,
+        short_code=url_entry.short_code,
+        clicks=url_entry.clicks,
+        created_at=url_entry.created_at,
+        status=url_entry.status,       
+        expires_at=url_entry.expires_at
+    )
+
+
 @router.get("/{short_code}")
 def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     """
@@ -352,30 +381,3 @@ def disable_short_link(short_code: str, db: Session = Depends(get_db), current_u
     return {"message": f"Short URL '{short_code}' has been disabled"}
 
 
-@router.get("/analytics/{short_code}", response_model=schemas.URLAnalytics)
-def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    """
-    Retrieve analytics for a short link.
-
-    Returns click count, original URL, short code, and creation date.
-    Note: clicks shown reflect the last DB sync — buffered Redis clicks
-    may not yet be included until the next Celery sync task runs.
-    """
-    url_entry = db.query(models.ShortLink).filter(
-        models.ShortLink.short_code == short_code,
-    ).first()
-
-    if not url_entry:
-        raise HTTPException(status_code=404, detail="Short URL not available")
-
-    if url_entry.user_id != current_user.id and current_user.tier != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorised to view analytics for this URL")
-
-    return schemas.URLAnalytics(
-        original_url=url_entry.destination.original_url,
-        short_code=url_entry.short_code,
-        clicks=url_entry.clicks,
-        created_at=url_entry.created_at,
-        status=url_entry.status,       
-        expires_at=url_entry.expires_at
-    )
