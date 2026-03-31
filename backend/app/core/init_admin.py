@@ -2,11 +2,12 @@ import os
 from app.database import SessionLocal
 from app import models
 from app.core.security import hash_password
-from app.middleware.logging import logger
+from app.middleware.logging import get_logger
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = get_logger(__name__)
 
 def create_admin():
     db = SessionLocal()
