@@ -51,6 +51,7 @@ function Router() {
 
   if (route.startsWith("/") && route.length > 1) {
     const code = route.slice(1);
+    console.log(code);
     if (!RESERVED.includes(code)) return <RedirectPage onNavigate={navigate} code={code} />;
   }
 
