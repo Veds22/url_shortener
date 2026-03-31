@@ -27,7 +27,7 @@ export default function RedirectPage({ onNavigate, code }) {
         if (c <= 1) {
           clearInterval(t);
           // After countdown, trigger real backend redirect
-          redirectApi.go(code);
+          redirectApi.get(code);
           return 0;
         }
         return c - 1;
