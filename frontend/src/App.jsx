@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import MePage from "./pages/MePage";
@@ -7,61 +7,46 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import RedirectPage from "./pages/RedirectPage";
 import DocsPage from "./pages/DocsPage";
 
-const RESERVED = ["me", "login", "signup"];
+const RESERVED = ["me", "login", "signup", "docs"];
 
-function getInitialRoute() {
-  if (typeof window === "undefined") return "/";
-  const path = window.location.pathname || "/";
-  // Normalize multiple trailing slashes
-  return path.replace(/\/+$/, "") || "/";
+function AppRoutes() {
+  const navigate = useNavigate();
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage onNavigate={navigate} />} />
+      <Route path="/me" element={<MePage onNavigate={navigate} />} />
+      <Route path="/login" element={<AuthPage onNavigate={navigate} defaultTab="login" />} />
+      <Route path="/signup" element={<AuthPage onNavigate={navigate} defaultTab="signup" />} />
+      <Route path="/docs" element={<DocsPage onNavigate={navigate} />} />
+      <Route path="/analytics/:code" element={<AnalyticsRoute onNavigate={navigate} />} />
+      <Route path="/:code" element={<ShortCodeRoute onNavigate={navigate} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
-function Router() {
-  const [route, setRoute] = useState(getInitialRoute);
-  const navigate = (path) => {
-    if (typeof window !== "undefined") {
-      // Push new entry into browser history so URL updates
-      window.history.pushState({}, "", path);
-    }
-    setRoute(path);
-  };
+function AnalyticsRoute({ onNavigate }) {
+  const { code = "" } = useParams();
+  return <AnalyticsPage onNavigate={onNavigate} code={code} />;
+}
 
-  // Keep route in sync when user uses browser back/forward buttons
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+function ShortCodeRoute({ onNavigate }) {
+  const { code = "" } = useParams();
 
-    const handlePopState = () => {
-      setRoute(getInitialRoute());
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  if (route === "/") return <LandingPage onNavigate={navigate} />;
-  if (route === "/me") return <MePage onNavigate={navigate} />;
-  if (route === "/login") return <AuthPage onNavigate={navigate} defaultTab="login" />;
-  if (route === "/signup") return <AuthPage onNavigate={navigate} defaultTab="signup" />;
-  if (route === "/docs") return <DocsPage onNavigate={navigate} />;
-
-  if (route.startsWith("/analytics/")) {
-    const code = route.replace("/analytics/", "");
-    return <AnalyticsPage onNavigate={navigate} code={code} />;
+  if (RESERVED.includes(code)) {
+    return <Navigate to={`/${code}`} replace />;
   }
 
-  if (route.startsWith("/") && route.length > 1) {
-    const code = route.slice(1);
-    console.log(code);
-    if (!RESERVED.includes(code)) return <RedirectPage onNavigate={navigate} code={code} />;
-  }
-
-  return <LandingPage onNavigate={navigate} />;
+  return <RedirectPage onNavigate={onNavigate} code={code} />;
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <Router />
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </AuthProvider>
   );
 }
