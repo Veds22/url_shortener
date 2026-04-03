@@ -20,7 +20,7 @@ function AppRoutes() {
       <Route path="/signup" element={<AuthPage onNavigate={navigate} defaultTab="signup" />} />
       <Route path="/docs" element={<DocsPage onNavigate={navigate} />} />
       <Route path="/analytics/:code" element={<AnalyticsRoute onNavigate={navigate} />} />
-      <Route path="/:code" element={<ShortCodeRoute onNavigate={navigate} />} />
+      <Route path="/:code" element={<RedirectPage onNavigate={navigate} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
