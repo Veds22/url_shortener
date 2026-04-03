@@ -1,4 +1,5 @@
 ## This is the main application file for the URL shortener service. It sets up the FastAPI app, includes routers, and defines middleware and exception handlers.
+import os
 # FastAPI imports
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -34,15 +35,24 @@ app.state.limiter = limiter
 
 #adding Middleware
 
+frontend_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:5173,https://linksnip-iota.vercel.app",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(LoggingMiddleware)
-app.add_middleware(SlowAPIMiddleware)
 
 # Exception handlers #
 

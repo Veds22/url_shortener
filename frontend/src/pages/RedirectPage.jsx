@@ -12,37 +12,23 @@ export default function RedirectPage({ onNavigate, code }) {
   const [link, setLink] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
+
   useEffect(() => {
-    let cancelled = false;
-
-    async function fetchLink() {
-      if (!code) return;
-      setLoading(true);
-      try {
-        const data = await publicLinksApi.resolve(code);
-        if (!cancelled) {
-          setLink(data);
-          setCountdown(3);
-        }
-      } catch (_) {
-        if (!cancelled) {
-          setLink(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchLink();
-    return () => {
-      cancelled = true;
-    };
+    setLoading(true);
+    publicLinksApi.resolve(code)
+      .then((data) => {
+        setLink(data);
+        setCountdown(3);
+      })
+      .catch(() => {
+        setLink(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [code]);
 
   useEffect(() => {
-    if (!link || link.status !== "active") return;
     const t = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -55,7 +41,7 @@ export default function RedirectPage({ onNavigate, code }) {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [link, code]);
+  }, [link]);
 
   const center = {
     minHeight: "100vh", background: C.bg, color: C.text,
@@ -110,7 +96,7 @@ export default function RedirectPage({ onNavigate, code }) {
       </div>
       {countdown > 0
         ? <div style={{ fontSize: 42, fontWeight: 900, color: C.teal, marginTop: 8 }}>{countdown}</div>
-        : <div style={{ color: C.green, fontWeight: 700 }}>✓ Redirected</div>
+        : <div style={{ fontSize: 18, color: C.textMuted, marginTop: 8 }}>Redirecting now...</div>
       }
       <Btn variant="ghost" style={{ marginTop: 8 }} onClick={() => onNavigate("/")}>Cancel</Btn>
     </div>
