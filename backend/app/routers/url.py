@@ -319,7 +319,7 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     cached_url = redis_client.get(f"url:{short_code}")
     if cached_url:
         new_count = redis_client.incr(f"clicks:{short_code}")
-        if new_count >= 50:
+        if new_count >= 3:
             from app.tasks.click_tasks import sync_clicks_for_code
             sync_clicks_for_code.delay(short_code)
         return RedirectResponse(url=cached_url)
