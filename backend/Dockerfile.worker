@@ -6,6 +6,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ..
+COPY . .
 
 CMD ["celery", "-A", "app.core.celery_app.celery_app" "worker", "--loglevel=info", "--concurrency=1"]
