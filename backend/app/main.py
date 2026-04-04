@@ -39,7 +39,7 @@ frontend_origins = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ALLOW_ORIGINS",
-        "http://localhost:5173,https://linksnip-iota.vercel.app",
+        "http://localhost:5173,http://localhost:3000"
     ).split(",")
     if origin.strip()
 ]
