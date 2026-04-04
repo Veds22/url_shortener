@@ -4,6 +4,7 @@ import { C } from "../utils/theme";
 import { shortUrl } from "../utils/url";
 import Btn from "../components/Btn";
 import { publicLinksApi, redirectApi } from "../services/api";
+import ErrorPage from "./ErrorPage";
 
 // NOTE: In production this page is never reached — FastAPI handles
 // GET /{short_code} and issues a real HTTP 307 redirect before React loads.
@@ -59,6 +60,13 @@ export default function RedirectPage({ onNavigate, code }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
+
+  const errorState = error
+    ? {
+        statusCode: error.statusCode,
+        errorMessage: error.errorMessage,
+      }
+    : null;
 
   // Fetch link data on mount or code change
   useEffect(() => {
@@ -126,108 +134,8 @@ export default function RedirectPage({ onNavigate, code }) {
     </div>
   );
 
-  // Display error inline
-  if (error) {
-    const errorInfo = ERROR_DETAILS[error.statusCode] || ERROR_DETAILS[404];
-
-    const content = {
-      textAlign: "center",
-      maxWidth: 500,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 24,
-    };
-
-    const statusCodeStyle = {
-      fontSize: 72,
-      fontWeight: 700,
-      color: errorInfo.colors.accent,
-      margin: 0,
-      lineHeight: 1,
-    };
-
-    const titleStyle = {
-      fontSize: 28,
-      fontWeight: 600,
-      color: C.text,
-      margin: 0,
-    };
-
-    const subtitleStyle = {
-      fontSize: 16,
-      color: C.text,
-      opacity: 0.7,
-      margin: 0,
-      lineHeight: 1.5,
-    };
-
-    const messageStyle = {
-      fontSize: 14,
-      color: errorInfo.colors.accent,
-      background: `${errorInfo.colors.accent}15`,
-      padding: 12,
-      borderRadius: 8,
-      marginTop: 8,
-      fontFamily: "monospace",
-      wordBreak: "break-word",
-    };
-
-    const buttonsContainer = {
-      display: "flex",
-      gap: 12,
-      justifyContent: "center",
-      flexWrap: "wrap",
-      marginTop: 12,
-    };
-
-    return (
-      <div style={center}>
-        <div style={content}>
-          <div style={statusCodeStyle}>{error.statusCode}</div>
-          <div>
-            <h1 style={titleStyle}>{errorInfo.title}</h1>
-            <p style={subtitleStyle}>{errorInfo.subtitle}</p>
-            {error.errorMessage && (
-              <p style={messageStyle}>{error.errorMessage}</p>
-            )}
-          </div>
-
-          <div style={buttonsContainer}>
-            <Btn
-              label="Go Home"
-              onClick={() => onNavigate("/")}
-              style={{
-                background: errorInfo.colors.accent,
-                color: "white",
-                padding: "10px 24px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
-                transition: "all 0.3s",
-              }}
-            />
-            <Btn
-              label="Go Back"
-              onClick={() => navigate(-1)}
-              style={{
-                background: "transparent",
-                color: errorInfo.colors.accent,
-                padding: "10px 24px",
-                borderRadius: 8,
-                border: `2px solid ${errorInfo.colors.accent}`,
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
-                transition: "all 0.3s",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    );
+  if (errorState) {
+    return <ErrorPage onNavigate={onNavigate} statusCode={errorState.statusCode} errorMessage={errorState.errorMessage} />;
   }
 
   return (

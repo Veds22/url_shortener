@@ -38,13 +38,6 @@ export default function LandingPage({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const { toast, showToast } = useToast();
 
-  const scrollToSection = (id) => {
-    const el = typeof document !== "undefined" ? document.getElementById(id) : null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   const shorten = async () => {
     if (!url) { showToast("Please enter a URL", "error"); return; }
     setLoading(true);
@@ -92,7 +85,7 @@ export default function LandingPage({ onNavigate }) {
           SHORTEN. SHARE.<br /><span style={{ color: C.teal }}>TRACK.</span>
         </h1>
         <p style={{ color: C.textDim, fontSize: 18, maxWidth: 540, margin: "0 auto 56px", lineHeight: 1.8 }}>
-          Create short links, generate QR codes, and track every click 
+          Create short links, generate QR codes, and track every click — all from one clean dashboard.
         </p>
 
         <div style={{ maxWidth: 620, margin: "0 auto" }}>
@@ -160,7 +153,7 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* Stats */}
-      <div id="stats" style={{ background: C.bgCard, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "22px 48px" }}>
+      <div style={{ background: C.bgCard, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "22px 48px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 80 }}>
           {[["2.4M+", "Links Created"], ["48M+", "Clicks Tracked"], ["99.9%", "Uptime"], ["150+", "Countries"]].map(([val, label]) => (
             <div key={label} style={{ textAlign: "center" }}>
@@ -172,7 +165,7 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* How it works */}
-      <div id="how-it-works" style={{ padding: "72px 48px", textAlign: "center" }}>
+      <div style={{ padding: "72px 48px", textAlign: "center" }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", color: C.textMuted, textTransform: "uppercase", marginBottom: 48 }}>HOW IT WORKS</div>
         <div style={{ display: "flex", justifyContent: "center", maxWidth: 700, margin: "0 auto" }}>
           {[
@@ -183,14 +176,14 @@ export default function LandingPage({ onNavigate }) {
             <div key={step} style={{ flex: 1, padding: "0 28px" }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>{icon}</div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{step}</div>
-              <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7 }}>{desc}</div>
+              <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7 }}>{desc}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Pricing */}
-      <div id="pricing" style={{ padding: "72px 48px", borderTop: `1px solid ${C.border}`, textAlign: "center" }}>
+      <div style={{ padding: "72px 48px", borderTop: `1px solid ${C.border}`, textAlign: "center" }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", color: C.textMuted, textTransform: "uppercase", marginBottom: 48 }}>PRICING</div>
         <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
           {[
@@ -206,7 +199,7 @@ export default function LandingPage({ onNavigate }) {
               </div>
               <div style={{ height: 1, background: C.border, margin: "14px 0" }} />
               {features.map((f) => (
-                <div key={f} style={{ fontSize: 14, color: C.textDim, display: "flex", gap: 8, marginBottom: 8 }}>
+                <div key={f} style={{ fontSize: 13, color: C.textDim, display: "flex", gap: 8, marginBottom: 8 }}>
                   <span style={{ color }}>✓</span>{f}
                 </div>
               ))}
@@ -217,11 +210,11 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* ── Testimonials ─────────────────────────────────────────────────── */}
-      <div id="testimonials" style={{ padding: "80px 48px", borderTop: `1px solid ${C.border}`, background: C.bgCard }}>
+      <div style={{ padding: "80px 48px", borderTop: `1px solid ${C.border}`, background: C.bgCard }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", color: C.teal, textTransform: "uppercase", marginBottom: 12 }}>Testimonials</div>
           <h2 style={{ fontSize: 32, fontWeight: 900, letterSpacing: "-0.03em", margin: 0 }}>Trusted by teams who move fast</h2>
-            <p style={{ color: C.textDim, fontSize: 16, marginTop: 12 }}>Here's what people building with LinkSnip have to say.</p>
+          <p style={{ color: C.textDim, fontSize: 15, marginTop: 12 }}>Here's what people building with LinkSnip have to say.</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, maxWidth: 1000, margin: "0 auto" }}>
@@ -235,7 +228,7 @@ export default function LandingPage({ onNavigate }) {
               </div>
 
               {/* Quote */}
-              <p style={{ fontSize: 15, color: C.textDim, lineHeight: 1.75, margin: 0, flex: 1 }}>"{quote}"</p>
+              <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.75, margin: 0, flex: 1 }}>"{quote}"</p>
 
               {/* Author */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
@@ -253,13 +246,13 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* ── CTA Banner ───────────────────────────────────────────────────── */}
-      <div id="cta" style={{ padding: "72px 48px", textAlign: "center", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
+      <div style={{ padding: "72px 48px", textAlign: "center", borderTop: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 60% 80% at 50% 50%, ${C.teal}0d, transparent)`, pointerEvents: "none" }} />
         <h2 style={{ fontSize: 36, fontWeight: 900, letterSpacing: "-0.03em", margin: "0 0 16px" }}>
           Ready to shorten smarter?
         </h2>
         <p style={{ color: C.textDim, fontSize: 16, margin: "0 0 32px" }}>
-           Free to start. No credit card required.
+          Free to start. No credit card required.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
           <Btn style={{ padding: "12px 32px", fontSize: 15 }} onClick={() => onNavigate("/signup")}>Get Started Free</Btn>
@@ -274,42 +267,17 @@ export default function LandingPage({ onNavigate }) {
           {/* Brand column */}
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, color: C.teal, letterSpacing: "-0.03em", marginBottom: 12 }}>⚡ LinkSnip</div>
-            <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.8, margin: "0 0 20px", maxWidth: 260 }}>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.8, margin: "0 0 20px", maxWidth: 260 }}>
               Short links, QR codes, and click analytics — built for teams and makers who move fast.
             </p>
             <div style={{ display: "flex", gap: 10 }}>
               {[
-                { label: "GitHub", iconId: "github-icon", fallback: "GH", href: "https://github.com/Veds22" },
-                { label: "LinkedIn", iconId: "social-icon", fallback: "IN", href: "https://www.linkedin.com/in/vedant-srivastava-b21472291/" },
-              ].map(({ label, iconId, fallback, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  title={label}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 8,
-                    background: C.bgInput,
-                    border: `1px solid ${C.border}`,
-                    color: C.textDim,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textDecoration: "none",
-                  }}
-                >
-                  <svg width="18" height="18" aria-hidden="true" focusable="false">
-                    <use href={`/icons.svg#${iconId}`} />
-                  </svg>
-                  <span style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", border: 0 }}>{fallback}</span>
-                </a>
+                { label: "GitHub", icon: "GH" },
+                { label: "Twitter", icon: "TW" },
+              ].map(({ label, icon }) => (
+                <button key={label} title={label} style={{ width: 34, height: 34, borderRadius: 8, background: C.bgInput, border: `1px solid ${C.border}`, color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {icon}
+                </button>
               ))}
             </div>
           </div>
@@ -320,39 +288,9 @@ export default function LandingPage({ onNavigate }) {
               <div style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>{heading}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {links.map((link) => (
-                  <button
-                    key={link}
-                    style={{ background: "none", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", padding: 0, transition: "color 0.15s" }}
-                    onClick={() => {
-                      switch (link) {
-                        case "Features":
-                          scrollToSection("how-it-works");
-                          break;
-                        case "Pricing":
-                          scrollToSection("pricing");
-                          break;
-                        case "Changelog":
-                        case "Roadmap":
-                        case "API Docs":
-                        case "Status Page":
-                        case "About":
-                        case "Blog":
-                        case "Privacy Policy":
-                        case "Terms of Service":
-                          onNavigate("/docs");
-                          break;
-                        case "GitHub":
-                          if (typeof window !== "undefined") {
-                            window.open("https://github.com/Veds22", "_blank", "noopener,noreferrer");
-                          }
-                          break;
-                        default:
-                          break;
-                      }
-                    }}
-                    onMouseEnter={(e) => { e.target.style.color = C.text; }}
-                    onMouseLeave={(e) => { e.target.style.color = C.textMuted; }}
-                  >
+                  <button key={link} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", padding: 0, transition: "color 0.15s" }}
+                    onMouseEnter={(e) => e.target.style.color = C.text}
+                    onMouseLeave={(e) => e.target.style.color = C.textMuted}>
                     {link}
                   </button>
                 ))}
