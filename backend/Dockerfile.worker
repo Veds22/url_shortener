@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["celery", "-A", "app.core.celery_app.celery_app", "worker", "--loglevel=info", "--concurrency=1"]
+CMD ["sh", "-c", "celery -A app.core.celery_app worker --loglevel=info --concurrency=1 & celery -A app.core.celery_app beat --loglevel=info" ]
