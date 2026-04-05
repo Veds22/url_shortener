@@ -74,6 +74,20 @@ export default function RedirectPage({ onNavigate, code }) {
     setError(null);
     publicLinksApi.resolve(code)
       .then((data) => {
+        const status = (data?.status || "").toLowerCase();
+
+        if (status !== "active") {
+          const errorMessage = status === "expired"
+            ? "URL has expired"
+            : status === "disabled"
+              ? "URL is disabled"
+              : "URL is unavailable";
+
+          setError({ statusCode: 410, errorMessage });
+          setLink(null);
+          return;
+        }
+
         setLink(data);
         setCountdown(3);
       })
