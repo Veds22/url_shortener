@@ -27,3 +27,4 @@ def invalidate_url_cache(short_code: str):
             db.close()
     
     redis_client.delete(f"clicks:{short_code}")
+    redis_client.delete(f"url:{short_code}")
