@@ -27,12 +27,7 @@ def expiry_short_links():
             link.status = "expired"
             invalidate_url_cache(link.short_code)
         db.commit()
-        hard_delete_before = now - timedelta(days=1)
-        db.query(models.ShortLink).filter(
-            models.ShortLink.user_id == None,
-            models.ShortLink.status == "expired",
-            models.ShortLink.created_at <= hard_delete_before
-        ).delete(synchronize_session=False)
-        db.commit()
+        # Removed Hard deletion of expiry links to still access their analytics and details from the dashboard. 
+        # This also prevents accidental deletion of links that might have been set to expire at a certain time but are still needed for reference.
     finally:
         db.close()
