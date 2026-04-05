@@ -37,7 +37,7 @@ export default function LinksTable({ links, onAnalytics, onQR, onCopy, onToggleS
                 style={{ color: C.teal, fontWeight: 700, cursor: "pointer", fontFamily: "monospace", fontSize: 12 }}
                 onClick={() => onAnalytics(link.short_code)}
               >
-                {shortUrl(link.short_code)}
+                {link.short_code}
               </span>
             </td>
             <td
@@ -65,7 +65,7 @@ export default function LinksTable({ links, onAnalytics, onQR, onCopy, onToggleS
                 {link.status !== "expired" && (
                   <ActionBtn
                     color={link.status === "active" ? C.red : C.green}
-                    onClick={() => onToggleStatus(link.id, link.status)}
+                    onClick={() => onToggleStatus(link.short_code, link.status)}
                   >
                     {link.status === "active" ? "Disable" : "Enable"}
                   </ActionBtn>

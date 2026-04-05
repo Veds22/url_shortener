@@ -155,7 +155,6 @@ export default function ErrorPage({ onNavigate, statusCode = 404, errorMessage =
 
         <div style={buttonsContainer}>
           <Btn
-            label="Go Home"
             onClick={handleGoHome}
             style={{
               background: errorInfo.colors.accent,
@@ -168,9 +167,10 @@ export default function ErrorPage({ onNavigate, statusCode = 404, errorMessage =
               fontWeight: 500,
               transition: "all 0.3s",
             }}
-          />
+          >
+            Go Home
+          </Btn>
           <Btn
-            label="Go Back"
             onClick={() => navigate(-1)}
             style={{
               background: "transparent",
@@ -183,7 +183,9 @@ export default function ErrorPage({ onNavigate, statusCode = 404, errorMessage =
               fontWeight: 500,
               transition: "all 0.3s",
             }}
-          />
+          >
+            Go Back
+          </Btn>
         </div>
       </div>
     </div>

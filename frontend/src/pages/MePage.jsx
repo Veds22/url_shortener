@@ -65,9 +65,9 @@ export default function MePage({ onNavigate }) {
     showToast("Copied!");
   };
 
-  const handleToggle = async (id, currentStatus) => {
+  const handleToggle = async (shortCode, currentStatus) => {
     try {
-      await toggleStatus(id, currentStatus);
+      await toggleStatus(shortCode, currentStatus);
       showToast(`Link ${currentStatus === "active" ? "disabled" : "enabled"}`);
     } catch (err) {
       showToast(err.message, "error");

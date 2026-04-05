@@ -29,28 +29,27 @@ export function useLinks() {
   }, [page, limit]);
 
   // Optimistic toggle — update UI immediately, call API, revert on failure
-  const toggleStatus = async (id, currentStatus) => {
+  const toggleStatus = async (shortCode, currentStatus) => {
     const isActive = currentStatus === "active";
 
     // Optimistic update
     setLinks((prev) =>
       prev.map((l) =>
-        l.id === id ? { ...l, status: isActive ? "disabled" : "active" } : l
+        l.short_code === shortCode ? { ...l, status: isActive ? "disabled" : "active" } : l
       )
     );
 
     try {
-      const link = links.find((l) => l.id === id);
       if (isActive) {
-        await linksApi.disable(link.short_code);
+        await linksApi.disable(shortCode);
       } else {
-        await linksApi.enable(link.short_code);
+        await linksApi.enable(shortCode);
       }
     } catch (err) {
       // Revert on failure
       setLinks((prev) =>
         prev.map((l) =>
-          l.id === id ? { ...l, status: currentStatus } : l
+          l.short_code === shortCode ? { ...l, status: currentStatus } : l
         )
       );
       throw err;
