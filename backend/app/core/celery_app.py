@@ -20,7 +20,7 @@ celery_app.conf.broker_connection_retry_on_startup = True
 celery_app.conf.beat_schedule = {
     "sync-clicks-every-minute": {
         "task": "app.tasks.click_tasks.sync_all_clicks",
-        "schedule": 300.0,  # every 5 minutes
+        "schedule": 3600.0,  # every 1 hour
     }
 }
 
