@@ -30,6 +30,7 @@ RESERVED_CODES = {
     "login",
     "signup",
     "admin",
+    "tasks,"
 }
 
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,20}$")
