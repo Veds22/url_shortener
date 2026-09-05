@@ -7,9 +7,13 @@ import Card from "../components/Card";
 import Toast from "../components/Toast";
 import QRModal from "../components/QRModal";
 import { StatusBadge } from "../components/Badges";
+import ClickChart from "../components/ClickChart";
+import GeoBreakdown from "../components/GeoBreakdown";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../context/AuthContext";
 import { analyticsApi, linksApi } from "../services/api";
+
+const RANGE_OPTIONS = [7, 14, 30];
 
 export default function AnalyticsPage({ onNavigate, code }) {
   const { user } = useAuth();
@@ -18,6 +22,10 @@ export default function AnalyticsPage({ onNavigate, code }) {
   const [loading, setLoading] = useState(true);
   const [qrOpen, setQrOpen] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [range, setRange] = useState(7);
+  const [timeseries, setTimeseries] = useState(null);
+  const [geoData, setGeoData] = useState(null);
+  const [chartLoading, setChartLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -26,6 +34,25 @@ export default function AnalyticsPage({ onNavigate, code }) {
       .catch((err) => showToast(err.message, "error"))
       .finally(() => setLoading(false));
   }, [code]);
+
+  useEffect(() => {
+    setChartLoading(true);
+    Promise.all([
+      analyticsApi.timeseries(code, range),
+      analyticsApi.geo(code),
+    ])
+      .then(([ts, geo]) => {
+        setTimeseries(ts);
+        setGeoData(geo);
+      })
+      .catch(() => {
+        // Non-fatal — the main link summary above already loaded, so
+        // just leave the charts empty rather than blocking the page.
+        setTimeseries(null);
+        setGeoData(null);
+      })
+      .finally(() => setChartLoading(false));
+  }, [code, range]);
 
   const toggleStatus = async () => {
     if (!link || toggling) return;
@@ -163,22 +190,74 @@ export default function AnalyticsPage({ onNavigate, code }) {
           ))}
         </div>
 
-        {/* Advanced analytics placeholder */}
-        <Card style={{ padding: "28px", border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-            Advanced Analytics
+        {/* Click trend chart */}
+        <Card style={{ padding: "28px", border: `1px solid ${C.border}`, marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Clicks Over Time
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {RANGE_OPTIONS.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  style={{
+                    background: range === r ? C.tealDim : "none",
+                    border: `1px solid ${range === r ? C.teal : C.border}`,
+                    color: range === r ? C.teal : C.textMuted,
+                    borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  {r}d
+                </button>
+              ))}
+            </div>
           </div>
-          <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.8, margin: "0 0 16px" }}>
-            Click trends, referrer breakdown, and geographic data are coming soon. These require a <code style={{ background: C.bgInput, padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>ClickEvent</code> table on the backend to log each redirect with timestamp, referrer header, and resolved IP country.
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {["Daily click chart", "Top referrers", "Geographic breakdown", "Device types"].map((f) => (
-              <span key={f} style={{ background: C.bgInput, border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: C.textDim, fontWeight: 600 }}>
-                {f}
-              </span>
-            ))}
+          {chartLoading ? (
+            <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: C.textMuted, fontSize: 13 }}>
+              Loading chart...
+            </div>
+          ) : (
+            <ClickChart data={timeseries?.data} />
+          )}
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 12, lineHeight: 1.6 }}>
+            Chart and country data update on an hourly cycle, so they may run up to an hour behind the live total-clicks count above.
           </div>
         </Card>
+
+        {/* Geo breakdown + coming-soon notice side by side */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <Card style={{ padding: "28px", border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+              Clicks by Country
+            </div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 18 }}>
+              Updates hourly — may be up to an hour behind
+            </div>
+            {chartLoading ? (
+              <div style={{ padding: "24px 0", textAlign: "center", color: C.textMuted, fontSize: 13 }}>Loading...</div>
+            ) : (
+              <GeoBreakdown data={geoData?.data} />
+            )}
+          </Card>
+
+          <Card style={{ padding: "28px", border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+              Coming Soon
+            </div>
+            <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.8, margin: "0 0 16px" }}>
+              Referrer and device-type breakdowns aren't captured yet — they'd need the redirect endpoint to log the <code style={{ background: C.bgInput, padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>Referer</code> and <code style={{ background: C.bgInput, padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>User-Agent</code> headers per click, similar to how geo data is captured today.
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {["Top referrers", "Device types"].map((f) => (
+                <span key={f} style={{ background: C.bgInput, border: `1px solid ${C.border}`, borderRadius: 6, padding: "4px 10px", fontSize: 12, color: C.textDim, fontWeight: 600 }}>
+                  {f}
+                </span>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
 
       {qrOpen && (

@@ -11,7 +11,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.errors import RateLimitExceeded
 # Local imports
 from app.database import engine
-from app.routers import url, auth
+from app.routers import url, auth, admin
 from app import models
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limiter import limiter
@@ -25,6 +25,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(url.router)
 app.include_router(auth.router, prefix="/auth")  # Auth routes under /auth
+app.include_router(admin.router, prefix="/admin")  # Admin-only routes under /admin
 @app.on_event("startup")
 def startup_event():
     """Run startup tasks such as creating the default admin user."""

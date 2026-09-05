@@ -1,24 +1,27 @@
 import os
+import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import timedelta, timezone, datetime
+from datetime import timedelta, timezone, datetime, date
 from typing import Optional
 import re
 import uuid
 
 from app.database import get_db
-from app.core.utils import encode_base62, get_link_limit, get_expiry_limit
+from app.core.utils import encode_base62, get_link_limit, get_expiry_limit, ensure_utc
 from app.middleware.rate_limiter import limiter
 from app import models, schemas
 from app.core.redis import redis_client
 from app.core.cache import invalidate_url_cache
 from app.core.dependencies import get_current_user
+from sqlalchemy import func
 
 RESERVED_CODES = {
-    "docs",
+    "docs", 
     "openapi.json",
     "redoc",
     "shorten",
@@ -36,6 +39,7 @@ if SHORT_BASE_URL:
     SHORT_BASE_URL = SHORT_BASE_URL.rstrip("/")
 
 router = APIRouter()
+logger = logging.getLogger("app.routers.url")
 
 
 @router.get("/")
@@ -78,7 +82,7 @@ def create_short_url(
         
     # Set expiry based on user tier
     
-    if url_data.expires_at is not None and url_data.expires_at <= now:
+    if url_data.expires_at is not None and ensure_utc(url_data.expires_at) <= now:
         raise HTTPException(
             status_code=400,
             detail="Expiry time must be in the future"
@@ -241,6 +245,28 @@ def list_links(
     }
 
 
+def _get_owned_short_link(db: Session, short_code: str, current_user: Optional[models.User]) -> models.ShortLink:
+    """Shared lookup + ownership check for all per-link analytics endpoints
+    (summary, timeseries, geo breakdown). Anonymous users and non-owners
+    (unless admin) are rejected the same way get_analytics already did —
+    factored out here so the two new endpoints don't duplicate the check.
+    """
+    url_entry = db.query(models.ShortLink).filter(
+        models.ShortLink.short_code == short_code,
+    ).first()
+
+    if not url_entry:
+        raise HTTPException(status_code=404, detail="Short URL not available")
+
+    is_owner = current_user is not None and url_entry.user_id == current_user.id
+    is_admin = current_user is not None and current_user.tier == "admin"
+
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=403, detail="Unauthorised to view analytics for this URL")
+
+    return url_entry
+
+
 @router.get("/analytics/{short_code}", response_model=schemas.URLAnalytics)
 def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
@@ -250,15 +276,11 @@ def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: 
     Note: clicks shown reflect the last DB sync — buffered Redis clicks
     may not yet be included until the next Celery sync task runs.
     """
-    url_entry = db.query(models.ShortLink).filter(
-        models.ShortLink.short_code == short_code,
-    ).first()
-
-    if not url_entry:
-        raise HTTPException(status_code=404, detail="Short URL not available")
-
-    if url_entry.user_id != current_user.id and current_user.tier != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorised to view analytics for this URL")
+    
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    url_entry = _get_owned_short_link(db, short_code, current_user)
 
     return schemas.URLAnalytics(
         original_url=url_entry.destination.original_url,
@@ -268,6 +290,93 @@ def get_analytics(short_code: str, db: Session = Depends(get_db), current_user: 
         status=url_entry.status,       
         expires_at=url_entry.expires_at
     )
+
+
+@router.get("/analytics/{short_code}/timeseries", response_model=schemas.AnalyticsTimeseries)
+def get_analytics_timeseries(
+    short_code: str,
+    days: int = 7,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Daily click counts for the last `days` days, based on ClickEvent rows
+    (populated by the async geo-enrichment task — see app.tasks.click_tasks).
+
+    Note: this reflects only clicks that have been enriched so far, not
+    the raw Redis-buffered counter. A click made in the last few minutes
+    may not appear here yet, but will show up in ShortLink.clicks (via
+    the separate /analytics/{short_code} endpoint) immediately.
+
+    Days with zero clicks are included as zero rather than omitted, so
+    the frontend can render a continuous chart without gaps.
+    """
+    if days < 1 or days > 90:
+        raise HTTPException(status_code=400, detail="days must be between 1 and 90")
+
+    url_entry = _get_owned_short_link(db, short_code, current_user)
+
+    start = datetime.now(timezone.utc) - timedelta(days=days - 1)
+    start_date = start.date()
+
+    rows = (
+        db.query(
+            func.date(models.ClickEvent.clicked_at).label("day"),
+            func.count(models.ClickEvent.id).label("clicks"),
+        )
+        .filter(models.ClickEvent.short_link_id == url_entry.id)
+        .filter(models.ClickEvent.clicked_at >= start)
+        .group_by("day")
+        .all()
+    )
+
+    # SQLite returns the grouped label as a string ("2026-08-20"); Postgres
+    # returns a native date. Normalize both to date objects for lookup.
+    counts_by_day = {}
+    for day, clicks in rows:
+        day_value = day if isinstance(day, date) else datetime.strptime(day, "%Y-%m-%d").date()
+        counts_by_day[day_value] = clicks
+
+    data = [
+        schemas.DailyClickPoint(date=start_date + timedelta(days=offset), clicks=counts_by_day.get(start_date + timedelta(days=offset), 0))
+        for offset in range(days)
+    ]
+
+    return schemas.AnalyticsTimeseries(short_code=short_code, days=days, data=data)
+
+
+@router.get("/analytics/{short_code}/geo", response_model=schemas.AnalyticsGeoBreakdown)
+def get_analytics_geo(
+    short_code: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Click counts grouped by country, based on ClickEvent rows.
+
+    country_code is None for clicks not yet geo-enriched, or where the IP
+    couldn't be resolved (private/reserved ranges) — the frontend should
+    render these as "Unknown" rather than dropping them, since dropping
+    them would make the total silently not match the click count shown
+    elsewhere.
+    """
+    url_entry = _get_owned_short_link(db, short_code, current_user)
+
+    rows = (
+        db.query(
+            models.ClickEvent.country_code,
+            func.count(models.ClickEvent.id).label("clicks"),
+        )
+        .filter(models.ClickEvent.short_link_id == url_entry.id)
+        .group_by(models.ClickEvent.country_code)
+        .order_by(func.count(models.ClickEvent.id).desc())
+        .limit(10)
+        .all()
+    )
+
+    data = [schemas.GeoBreakdownItem(country_code=country_code, clicks=clicks) for country_code, clicks in rows]
+
+    return schemas.AnalyticsGeoBreakdown(short_code=short_code, data=data)
 
 
 @router.get("/resolve/{short_code}", response_model=schemas.URLResolve)
@@ -281,7 +390,7 @@ def resolve_short_code(short_code: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Short URL not found")
 
     now = datetime.now(timezone.utc)
-    if url_entry.expires_at and url_entry.expires_at <= now and url_entry.status != "expired":
+    if url_entry.expires_at and ensure_utc(url_entry.expires_at) <= now and url_entry.status != "expired":
         url_entry.status = "expired"
         db.commit()
         db.refresh(url_entry)
@@ -296,8 +405,40 @@ def resolve_short_code(short_code: str, db: Session = Depends(get_db)):
     )
 
 
+def get_client_ip(request: Request) -> str:
+    """Best-effort real client IP, accounting for running behind a
+    reverse proxy (Render, Cloud Run, etc.) where request.client.host
+    would otherwise just be the proxy's own address.
+    """
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # X-Forwarded-For can be a comma-separated chain; the first
+        # entry is the original client.
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host if request.client else ""
+
+
+def queue_click_for_geo_enrichment(short_code: str, request: Request) -> None:
+    """Push a lightweight per-click record onto a Redis list for later,
+    async geo-enrichment by a Celery task. This is intentionally separate
+    from the existing clicks:{code} counter — that counter drives
+    ShortLink.clicks and stays untouched; this queue only feeds ClickEvent
+    rows for analytics/geo. Fire-and-forget: any failure here should never
+    affect the redirect itself.
+    """
+    try:
+        payload = json.dumps({
+            "short_code": short_code,
+            "ip": get_client_ip(request),
+            "ts": datetime.now(timezone.utc).isoformat(),
+        })
+        redis_client.rpush("pending_click_events", payload)
+    except Exception:
+        logger.exception("Failed to queue click event for geo enrichment (short_code=%s)", short_code)
+
+
 @router.get("/{short_code}")
-def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
+def redirect_to_original(short_code: str, request: Request, db: Session = Depends(get_db)):
     """
     Redirect to the original URL for a given short code.
 
@@ -315,10 +456,15 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
           invalidates cache, and returns 410.
         - On a valid link, caches the URL in Redis for 3600 seconds
           and increments the click counter.
+
+    In both paths, a lightweight record is also queued for async geo
+    enrichment (see app.tasks.click_tasks.enrich_click_events) — this
+    never blocks or fails the redirect itself.
     """
     cached_url = redis_client.get(f"url:{short_code}")
     if cached_url:
         new_count = redis_client.incr(f"clicks:{short_code}")
+        queue_click_for_geo_enrichment(short_code, request)
         if new_count >= 20:
             from app.tasks.click_tasks import sync_clicks_for_code
             sync_clicks_for_code.delay(short_code)
@@ -337,7 +483,7 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     if url_entry.status == "expired":
         raise HTTPException(status_code=410, detail="URL has expired")
 
-    if url_entry.expires_at and url_entry.expires_at <= datetime.now(timezone.utc):
+    if url_entry.expires_at and ensure_utc(url_entry.expires_at) <= datetime.now(timezone.utc):
         url_entry.status = "expired"
         db.commit()
         invalidate_url_cache(short_code)
@@ -349,6 +495,7 @@ def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
         ex=3600
     )
     redis_client.incr(f"clicks:{short_code}")
+    queue_click_for_geo_enrichment(short_code, request)
 
     return RedirectResponse(url=url_entry.destination.original_url)
 
@@ -364,6 +511,9 @@ def enable_short_link(short_code: str, db: Session = Depends(get_db), current_us
     url_entry = db.query(models.ShortLink).filter(
         models.ShortLink.short_code == short_code,
     ).first()
+    
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
 
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
@@ -391,6 +541,10 @@ def disable_short_link(short_code: str, db: Session = Depends(get_db), current_u
     Returns 404 if the short code does not exist.
     Returns 410 if the link is already disabled.
     """
+    
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
     url_entry = db.query(models.ShortLink).filter(
         models.ShortLink.short_code == short_code
     ).first()
@@ -409,5 +563,3 @@ def disable_short_link(short_code: str, db: Session = Depends(get_db), current_u
     invalidate_url_cache(short_code)
 
     return {"message": f"Short URL '{short_code}' has been disabled"}
-
-

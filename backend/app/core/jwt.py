@@ -2,7 +2,13 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError(
+        "SECRET_KEY is not set. Refusing to start with an insecure default — "
+        "set SECRET_KEY in the environment before running the app."
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

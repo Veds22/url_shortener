@@ -105,7 +105,7 @@ export default function MePage({ onNavigate }) {
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 10 }}>
           {[
             { label: "Total Links", value: loading ? "—" : total, color: C.teal },
             { label: "Active", value: loading ? "—" : links.filter((l) => l.status === "active").length, color: C.green },
@@ -117,6 +117,9 @@ export default function MePage({ onNavigate }) {
               <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{label}</div>
             </Card>
           ))}
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 24 }}>
+          Click counts sync periodically and may run up to an hour behind live traffic.
         </div>
 
         {/* Error banner */}

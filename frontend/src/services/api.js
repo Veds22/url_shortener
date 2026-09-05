@@ -57,13 +57,14 @@ async function request(path, options = {}) {
 }
 
 // ── Auth ────────────────────────────────────────────────────────────────────
-// backend signup: { username, password } — no email field in User model
+// backend signup: { username, email, password } — email is required
+// backend login: { username, password }
 
 export const authApi = {
-  signup: (username, password) =>
+  signup: (username, email, password) =>
     request("/auth/signup", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, email, password }),
     }),
 
   login: (username, password) =>
@@ -107,6 +108,8 @@ export const linksApi = {
 
 export const analyticsApi = {
   get: (shortCode) => request(`/analytics/${shortCode}`),
+  timeseries: (shortCode, days = 7) => request(`/analytics/${shortCode}/timeseries?days=${days}`),
+  geo: (shortCode) => request(`/analytics/${shortCode}/geo`),
 };
 
 // ── Public link resolution ────────────────────────────────────────────────

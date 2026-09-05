@@ -1,7 +1,25 @@
 import string
+from datetime import datetime, timezone
 # Rate limiting imports
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+BASE62 = string.ascii_lowercase + string.ascii_uppercase + string.digits
+
+
+def ensure_utc(dt: datetime) -> datetime:
+    """Return dt as an aware UTC datetime.
+
+    SQLite drops timezone info when reading DateTime(timezone=True) columns,
+    yielding naive datetimes that crash on comparison with aware ones.
+    This helper re-attaches UTC when the info is missing, which is safe
+    because all datetimes in this project are stored as UTC.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 BASE62 = string.ascii_lowercase + string.ascii_uppercase + string.digits
 

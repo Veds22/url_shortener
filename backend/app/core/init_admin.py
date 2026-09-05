@@ -15,6 +15,7 @@ def create_admin():
     try:
         admin_username = os.getenv("ADMIN_USERNAME")
         admin_password = os.getenv("ADMIN_PASSWORD")
+        admin_email = os.getenv("ADMIN_EMAIL")  # optional
 
         if not admin_username or not admin_password:
             logger.warning("Admin credentials not set")
@@ -30,6 +31,7 @@ def create_admin():
 
         admin_user = models.User(
             username=admin_username,
+            email=admin_email,
             password_hash=hash_password(admin_password),
             tier="admin"
         )

@@ -22,4 +22,6 @@ redis
 celery
 slowapi
 httpx
+email-validator
 pytest      
+geoip2

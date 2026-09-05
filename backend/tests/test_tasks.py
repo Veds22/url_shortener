@@ -60,7 +60,7 @@ def test_sync_clicks_for_code_updates_db(client):
     make_short_link("click1", clicks=0)
 
     mock_redis = MagicMock()
-    mock_redis.get.return_value = b"5"
+    mock_redis.get.return_value = "5"
 
     with patch("app.tasks.click_tasks.redis_client", mock_redis):
         with patch("app.tasks.click_tasks.SessionLocal", return_value=TestingSessionLocal()):
@@ -90,8 +90,8 @@ def test_sync_all_clicks(client):
     make_short_link("all1", clicks=2)
 
     mock_redis = MagicMock()
-    mock_redis.keys.return_value = [b"clicks:all1"]
-    mock_redis.get.return_value = b"3"
+    mock_redis.keys.return_value = ["clicks:all1"]
+    mock_redis.get.return_value = "3"
 
     with patch("app.tasks.click_tasks.redis_client", mock_redis):
         with patch("app.tasks.click_tasks.SessionLocal", return_value=TestingSessionLocal()):
@@ -100,5 +100,5 @@ def test_sync_all_clicks(client):
     db = TestingSessionLocal()
     updated = db.query(models.ShortLink).filter_by(short_code="all1").first()
     assert updated.clicks == 5
-    mock_redis.delete.assert_called_once_with(b"clicks:all1")
+    mock_redis.delete.assert_called_once_with("clicks:all1")
     db.close()

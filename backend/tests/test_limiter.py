@@ -5,7 +5,7 @@ def test_rate_limiter(client, mock_redis):
             "/shorten",
             json={"url": f"https://www.example.com/{i}"}
         )
-        if i <= 10:
+        if i < 10:
             assert response.status_code == 200
         else:
             assert response.status_code == 429
