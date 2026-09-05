@@ -120,7 +120,3 @@ npm run dev
 | Admin | Unlimited | No limit + full access |
 
 ---
-
-## License
-
-MIT
