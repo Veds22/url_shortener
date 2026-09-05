@@ -9,9 +9,7 @@ if not REDIS_URL:
 def get_redis_client():
     return redis.Redis.from_url(
         REDIS_URL,
-        decode_responses=True,
-        ssl=True,
-        ssl_cert_reqs="none",
+        decode_responses=True,   
     )
     
 redis_client = get_redis_client()
