@@ -22,7 +22,7 @@ import json
 
 logger = logging.getLogger("app.routers.tasks")
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+router = APIRouter(tags=["tasks"])
 
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 
