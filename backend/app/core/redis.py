@@ -10,7 +10,7 @@ def get_redis_client():
     return redis.Redis.from_url(
         REDIS_URL,
         decode_responses=True,
-        ssl_cert_reqs=None,
+        ssl_cert_reqs="none",
     )
     
 redis_client = get_redis_client()
